@@ -28,7 +28,8 @@ func makeArrayCodec(st map[string]*Codec, enclosingNamespace string, schemaMap m
 	}
 
 	return &Codec{
-		typeName: &name{"array", nullNamespace},
+		generator: NewArrayCodecGenerator(itemCodec),
+		typeName:  &name{"array", nullNamespace},
 		nativeFromBinary: func(buf []byte) (interface{}, []byte, error) {
 			var value interface{}
 			var err error

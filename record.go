@@ -86,6 +86,10 @@ func makeRecordCodec(st map[string]*Codec, enclosingNamespace string, schemaMap 
 		codecFromFieldName[fieldName] = fieldCodec
 	}
 
+	recordTypeName, _ := newNameFromSchemaMap(enclosingNamespace, schemaMap)
+	// Can ignore the error here because it would have been caught above
+	c.generator = NewRecordCodecGenerator(recordTypeName, codecFromIndex, nameFromIndex)
+
 	c.binaryFromNative = func(buf []byte, datum interface{}) ([]byte, error) {
 		valueMap, ok := datum.(map[string]interface{})
 		if !ok {

@@ -68,7 +68,14 @@ func buildCodecForTypeDescribedBySlice(st map[string]*Codec, enclosingNamespace 
 		indexFromName[fullName] = i
 	}
 
+	generator, err := NewUnionCodecGenerator(codecFromIndex)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create union codec, reason: %s", err)
+	}
+
 	return &Codec{
+		generator: generator,
+
 		// NOTE: To support record field default values, union schema set to the
 		// type name of first member
 		// TODO: add/change to schemaCanonical below

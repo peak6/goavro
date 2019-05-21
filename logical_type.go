@@ -235,6 +235,9 @@ func makeDecimalBytesCodec(st map[string]*Codec, enclosingNamespace string, sche
 	c.textualFromNative = decimalBytesFromNative(bytesTextualFromNative, toSignedBytes, precision, scale)
 	c.nativeFromBinary = nativeFromDecimalBytes(bytesNativeFromBinary, precision, scale)
 	c.nativeFromTextual = nativeFromDecimalBytes(bytesNativeFromTextual, precision, scale)
+
+	c.generator = NewDecimalBytesCodecGenerator(precision, scale)
+
 	return c, nil
 }
 

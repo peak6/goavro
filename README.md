@@ -2,6 +2,33 @@
 
 Goavro is a library that encodes and decodes Avro data.
 
+## Code Generation
+
+This fork adds experimental support to generate concrete structures
+based off of avro schema files.
+
+It only generates code to decode binary avro records.
+
+Currently, it supports the following types:
+
+* records
+* unions
+* array
+* int, long
+* float, double
+* bool
+* bytes.decimal
+* int.date
+
+With respect to unions the only functionality supported it to handle nulls. In
+other-words the generator only allows a union to have 2 types, one of which must be "null".
+The empty value of the type will be used if the field is null.
+
+To run the generator:
+
+`go run main/gen.go -p <package name> -o <output directory> <list of schema files>`
+
+
 ## Description
 
 * Encodes to and decodes from both binary and textual JSON Avro data.

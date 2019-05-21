@@ -52,6 +52,8 @@ type Codec struct {
 	binaryFromNative  func([]byte, interface{}) ([]byte, error)
 	nativeFromBinary  func([]byte) (interface{}, []byte, error)
 	textualFromNative func([]byte, interface{}) ([]byte, error)
+
+	generator *CodecGenerator
 }
 
 // NewCodec returns a Codec used to translate between a byte slice of either
@@ -112,6 +114,7 @@ func newSymbolTable() map[string]*Codec {
 			nativeFromBinary:  booleanNativeFromBinary,
 			nativeFromTextual: booleanNativeFromTextual,
 			textualFromNative: booleanTextualFromNative,
+			generator:         NewBoolCodecGenerator(),
 		},
 		"bytes": {
 			typeName:          &name{"bytes", nullNamespace},
@@ -130,6 +133,7 @@ func newSymbolTable() map[string]*Codec {
 			nativeFromBinary:  doubleNativeFromBinary,
 			nativeFromTextual: doubleNativeFromTextual,
 			textualFromNative: doubleTextualFromNative,
+			generator:         NewDoubleCodecGenerator(),
 		},
 		"float": {
 			typeName:          &name{"float", nullNamespace},
@@ -139,6 +143,7 @@ func newSymbolTable() map[string]*Codec {
 			nativeFromBinary:  floatNativeFromBinary,
 			nativeFromTextual: floatNativeFromTextual,
 			textualFromNative: floatTextualFromNative,
+			generator:         NewFloatCodecGenerator(),
 		},
 		"int": {
 			typeName:          &name{"int", nullNamespace},
@@ -148,6 +153,7 @@ func newSymbolTable() map[string]*Codec {
 			nativeFromBinary:  intNativeFromBinary,
 			nativeFromTextual: intNativeFromTextual,
 			textualFromNative: intTextualFromNative,
+			generator:         NewIntCodecGenerator(),
 		},
 		"long": {
 			typeName:          &name{"long", nullNamespace},
@@ -157,6 +163,7 @@ func newSymbolTable() map[string]*Codec {
 			nativeFromBinary:  longNativeFromBinary,
 			nativeFromTextual: longNativeFromTextual,
 			textualFromNative: longTextualFromNative,
+			generator:         NewLongCodecGenerator(),
 		},
 		"null": {
 			typeName:          &name{"null", nullNamespace},
@@ -175,6 +182,7 @@ func newSymbolTable() map[string]*Codec {
 			nativeFromBinary:  stringNativeFromBinary,
 			nativeFromTextual: stringNativeFromTextual,
 			textualFromNative: stringTextualFromNative,
+			generator:         NewStringCodecGenerator(),
 		},
 		// Start of compiled logical types using format typeName.logicalType where there is
 		// no dependence on schema.
@@ -222,6 +230,7 @@ func newSymbolTable() map[string]*Codec {
 			binaryFromNative:  dateFromNative(intBinaryFromNative),
 			nativeFromBinary:  nativeFromDate(intNativeFromBinary),
 			textualFromNative: dateFromNative(intTextualFromNative),
+			generator:         NewIntDateCodecGenerator(),
 		},
 	}
 }
@@ -534,7 +543,11 @@ func registerNewCodec(st map[string]*Codec, schemaMap map[string]interface{}, en
 	if err != nil {
 		return nil, err
 	}
-	c := &Codec{typeName: n}
-	st[n.fullName] = c
-	return c, nil
+	if c, ok := st[n.fullName]; ok {
+		return c, nil
+	} else {
+		c = &Codec{typeName: n}
+		st[n.fullName] = c
+		return c, nil
+	}
 }
