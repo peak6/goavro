@@ -167,10 +167,11 @@ func NewArrayCodecGenerator(realCodec *Codec) *CodecGenerator {
 `)
 		w.WriteString(fmt.Sprintf("if value, tmpBuf, err = %s(tmpBuf); err != nil {\n", realCodec.generator.genDecodeInstanceSrc()))
 		w.WriteString(fmt.Sprintf("return %s, buf, fmt.Errorf(\"cannot decode binary array item %%d: %%s\", i+1, err)\n", gen.genNativeDefaultValueSrc()))
-		w.WriteString("}\n") // End "if value, ..."
+		w.WriteString("} else {\n") // End "if value, ..."
+		w.WriteString("arrayValues = append(arrayValues, value)\n\n")
+		w.WriteString("}\n")
 		w.WriteString("}\n") // End "for i := ..."
 
-		w.WriteString("arrayValues = append(arrayValues, value)\n\n")
 		w.WriteString(fmt.Sprintf("blockCount, tmpBuf, err = goavro.DecodeBlockCount(tmpBuf)\n"))
 		w.WriteString(fmt.Sprintf("if err != nil { return %s, buf, err }\n\n", gen.genNativeDefaultValueSrc()))
 
