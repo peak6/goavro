@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/linkedin/goavro/v2"
+	"github.com/peak6/goavro/v2"
 )
 
 func usage() {
