@@ -202,7 +202,7 @@ func NewRecordCodecGenerator(recordTypeName *name, codecFromIndex []*Codec, name
 				imports = append(imports, fieldCodec.generator.getImports()...)
 			}
 		}
-		imports = append(imports, "github.com/peak6/goavro")
+		imports = append(imports, "github.com/peak6/goavro/v2")
 
 		w.Write([]byte("import (\n"))
 		for _, imp := range imports {
