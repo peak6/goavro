@@ -5,7 +5,7 @@ import (
 
 	"flag"
 
-	"github.com/peak6/goavro"
+	"github.com/peak6/goavro/v2"
 )
 
 func main() {
