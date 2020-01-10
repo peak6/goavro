@@ -14,6 +14,8 @@ type CodecGenerator struct {
 	genNativeDefaultValueSrc func() string
 	getImports               func() []string
 	isWritable               bool
+	genDecodePtrInstanceSrc func() string
+	genNativeTypeNamePtrSrc func() string
 }
 
 func NewBoolCodecGenerator() *CodecGenerator {
@@ -22,6 +24,8 @@ func NewBoolCodecGenerator() *CodecGenerator {
 		genNativeTypeNameSrc:     func() string { return "bool" },
 		genNativeDefaultValueSrc: func() string { return "false" },
 		getImports:               func() []string { return []string{} },
+		genDecodePtrInstanceSrc: func() string { return "goavro.BoolNativePtrFromBinary" },
+		genNativeTypeNamePtrSrc: func() string { return "*bool" },
 	}
 }
 
@@ -31,6 +35,8 @@ func NewDoubleCodecGenerator() *CodecGenerator {
 		genNativeTypeNameSrc:     func() string { return "float64" },
 		genNativeDefaultValueSrc: func() string { return "0.0" },
 		getImports:               func() []string { return []string{} },
+		genDecodePtrInstanceSrc: func() string { return "goavro.DoubleNativePtrFromBinary" },
+		genNativeTypeNamePtrSrc: func() string { return "*float64" },
 	}
 }
 
@@ -40,6 +46,8 @@ func NewFloatCodecGenerator() *CodecGenerator {
 		genNativeTypeNameSrc:     func() string { return "float32" },
 		genNativeDefaultValueSrc: func() string { return "0.0" },
 		getImports:               func() []string { return []string{} },
+		genDecodePtrInstanceSrc: func() string { return "goavro.FloatNativePtrFromBinary" },
+		genNativeTypeNamePtrSrc: func() string { return "*float32" },
 	}
 }
 
@@ -49,6 +57,8 @@ func NewLongCodecGenerator() *CodecGenerator {
 		genNativeTypeNameSrc:     func() string { return "int64" },
 		genNativeDefaultValueSrc: func() string { return "0" },
 		getImports:               func() []string { return []string{} },
+		genDecodePtrInstanceSrc: func() string { return "goavro.LongNativePtrFromBinary" },
+		genNativeTypeNamePtrSrc: func() string { return "*int64" },
 	}
 }
 
@@ -58,6 +68,8 @@ func NewIntCodecGenerator() *CodecGenerator {
 		genNativeTypeNameSrc:     func() string { return "int32" },
 		genNativeDefaultValueSrc: func() string { return "0" },
 		getImports:               func() []string { return []string{} },
+		genDecodePtrInstanceSrc: func() string { return "goavro.IntNativePtrFromBinary" },
+		genNativeTypeNamePtrSrc: func() string { return "*int32" },
 	}
 }
 
@@ -67,6 +79,8 @@ func NewStringCodecGenerator() *CodecGenerator {
 		genNativeTypeNameSrc:     func() string { return "string" },
 		genNativeDefaultValueSrc: func() string { return "\"\"" },
 		getImports:               func() []string { return []string{} },
+		genDecodePtrInstanceSrc: func() string { return "goavro.StringNativePtrFromBinary" },
+		genNativeTypeNamePtrSrc: func() string { return "*string" },
 	}
 }
 
@@ -76,6 +90,8 @@ func NewIntDateCodecGenerator() *CodecGenerator {
 		genNativeTypeNameSrc:     func() string { return "time.Time" },
 		genNativeDefaultValueSrc: func() string { return "time.Time{}" },
 		getImports:               func() []string { return []string{"time"} },
+		genDecodePtrInstanceSrc: func() string { return "goavro.NativePtrFromBinaryDate" },
+		genNativeTypeNamePtrSrc: func() string { return "*time.Time" },
 	}
 }
 
@@ -88,6 +104,11 @@ func NewDecimalBytesCodecGenerator(precision, scale int) *CodecGenerator {
 			return fmt.Sprintf("func (buf []byte) (*big.Rat, []byte, error) {\nreturn goavro.NativeFromBinaryDecimalBytes(buf, %d, %d)\n}",
 				precision, scale)
 		},
+		genDecodePtrInstanceSrc: func() string {
+			return fmt.Sprintf("func (buf []byte) (*big.Rat, []byte, error) {\nreturn goavro.NativeFromBinaryDecimalBytes(buf, %d, %d)\n}",
+				precision, scale)
+		},
+		genNativeTypeNamePtrSrc: func() string { return "*big.Rat" },
 	}
 }
 
@@ -107,30 +128,31 @@ func NewUnionCodecGenerator(codecFromIndex []*Codec) (*CodecGenerator, error) {
 
 	gen := &CodecGenerator{
 		getImports:               func() []string { return append([]string{"fmt"}, realCodec.generator.getImports()...) },
-		genNativeTypeNameSrc:     func() string { return realCodec.generator.genNativeTypeNameSrc() },
+		genNativeTypeNameSrc:     func() string { return realCodec.generator.genNativeTypeNamePtrSrc() },
 		genNativeDefaultValueSrc: func() string { return realCodec.generator.genNativeDefaultValueSrc() },
+		genNativeTypeNamePtrSrc: func() string { return realCodec.generator.genNativeTypeNamePtrSrc() },
 	}
 
 	gen.genDecodeInstanceSrc = func() string {
 		var w bytes.Buffer
 
-		w.WriteString(fmt.Sprintf("func(buf []byte) (%s, []byte, error) {\n", gen.genNativeTypeNameSrc()))
+		w.WriteString(fmt.Sprintf("func(buf []byte) (%s, []byte, error) {\n", gen.genNativeTypeNamePtrSrc()))
 		w.WriteString("tmpBuf := buf\n")
 		w.WriteString("idx, tmpBuf, err := goavro.LongNativeFromBinary(tmpBuf)\n")
-		w.WriteString(fmt.Sprintf("if err != nil { return %s, buf, err }\n", gen.genNativeDefaultValueSrc()))
+		w.WriteString(fmt.Sprintf("if err != nil { return %s, buf, err }\n", "nil"))
 		w.WriteString("switch idx {\n")
 
 		for i, fieldCodec := range codecFromIndex {
 			w.WriteString(fmt.Sprintf("case %d:\n", i))
 			if codecFromIndex[i].typeName.fullName == "null" {
 				w.WriteString("// Null case, use empty value\n")
-				w.WriteString(fmt.Sprintf("return %s, tmpBuf, nil\n", gen.genNativeDefaultValueSrc()))
+				w.WriteString(fmt.Sprintf("return %s, tmpBuf, nil\n", "nil"))
 			} else {
-				w.WriteString(fmt.Sprintf("return  %s(tmpBuf)\n", fieldCodec.generator.genDecodeInstanceSrc()))
+				w.WriteString(fmt.Sprintf("return  %s(tmpBuf)\n", fieldCodec.generator.genDecodePtrInstanceSrc()))
 			}
 		}
 		w.WriteString(fmt.Sprintf("default:\n"))
-		w.WriteString(fmt.Sprintf("return %s, buf, fmt.Errorf(\"union index out of bounds\")\n", gen.genNativeDefaultValueSrc()))
+		w.WriteString(fmt.Sprintf("return %s, buf, fmt.Errorf(\"union index out of bounds\")\n", "nil"))
 		w.WriteString("}\n")
 		w.WriteString("}")
 
@@ -183,8 +205,94 @@ func NewArrayCodecGenerator(realCodec *Codec) *CodecGenerator {
 		return w.String()
 	}
 
+	gen.genDecodePtrInstanceSrc = gen.genDecodeInstanceSrc
+	gen.genNativeTypeNamePtrSrc = gen.genNativeTypeNameSrc
+
 	return gen
 }
+
+func NewEnumCodecGenerator(enumName *name, symbols []string) *CodecGenerator {
+	gen := &CodecGenerator{
+		getImports:               func() []string { return []string{} },
+		genNativeTypeNameSrc:     func() string { return enumName.short() },
+		genNativeTypeNamePtrSrc: func() string { return "*" + enumName.short() },
+		genNativeDefaultValueSrc: func() string { return "0" },
+		genDecodeInstanceSrc:     func() string { return "goavro.IntEnumNativeFromBinary" },
+		genDecodePtrInstanceSrc: func() string { return "goavro.IntEnumPtrNativeFromBinary"},
+		isWritable:               true,
+	}
+
+	gen.writeDecoderSrc = func(w io.Writer) error {
+
+		// Write the type
+		w.Write([]byte(fmt.Sprintf("type %s int\n\n", enumName.short())))
+
+		// Write the const
+		w.Write([]byte("const (\n"))
+
+		// Write the actual constants
+		for i, sym := range symbols {
+			if i == 0 {
+				w.Write([]byte(fmt.Sprintf("%s %s = iota\n", sym, enumName.short())))
+			} else {
+				w.Write([]byte(fmt.Sprintf("%s\n", sym)))
+			}
+		}
+
+		// Write the close const
+		w.Write([]byte(")\n"))
+
+		return nil
+	}
+
+	gen.genDecodeInstanceSrc = func() string {
+		var w bytes.Buffer
+
+		w.WriteString(fmt.Sprintf("func(buf []byte) (%s, []byte, error) {\n", gen.genNativeTypeNameSrc()))
+		w.WriteString("tmpBuf := buf\n")
+		w.WriteString("if tmp, tmpBuf, err := goavro.IntEnumNativeFromBinary(tmpBuf); err != nil {\n")
+		w.WriteString("return 0, buf, err\n")
+		w.WriteString("} else {\n")
+		w.WriteString(fmt.Sprintf("return tmp.(%s), tmpBuf, nil\n", gen.genNativeTypeNameSrc()))
+		w.WriteString("}\n")
+		w.WriteString("}")
+
+		//w.WriteString("tmpBuf := buf\n")
+		//w.WriteString("idx, tmpBuf, err := goavro.LongNativeFromBinary(tmpBuf)\n")
+		//w.WriteString(fmt.Sprintf("if err != nil { return %s, buf, err }\n", "nil"))
+		//w.WriteString("switch idx {\n")
+		//
+		//for i, fieldCodec := range codecFromIndex {
+		//	w.WriteString(fmt.Sprintf("case %d:\n", i))
+		//	if codecFromIndex[i].typeName.fullName == "null" {
+		//		w.WriteString("// Null case, use empty value\n")
+		//		w.WriteString(fmt.Sprintf("return %s, tmpBuf, nil\n", "nil"))
+		//	} else {
+		//		w.WriteString(fmt.Sprintf("return  %s(tmpBuf)\n", fieldCodec.generator.genDecodePtrInstanceSrc()))
+		//	}
+		//}
+		//w.WriteString(fmt.Sprintf("default:\n"))
+		//w.WriteString(fmt.Sprintf("return %s, buf, fmt.Errorf(\"union index out of bounds\")\n", "nil"))
+		//w.WriteString("}\n")
+		//w.WriteString("}")
+
+		return w.String()
+
+	}
+
+	return gen
+
+}
+
+// 	if result.BreakType, newBuf, err = func(buf []byte) (BreakType, []byte, error) {
+//		if tmpBreakTypeInt, newBuf, err := goavro.IntEnumNativeFromBinary(newBuf); err != nil {
+//			return 0, newBuf, err
+//		} else {
+//			return tmpBreakTypeInt.(BreakType), newBuf, nil
+//		}
+//	}(newBuf); err != nil {
+//		return nil, newBuf, err
+//	}
 
 func NewRecordCodecGenerator(recordTypeName *name, codecFromIndex []*Codec, nameFromIndex []string) *CodecGenerator {
 	gen := &CodecGenerator{
@@ -233,6 +341,9 @@ func NewRecordCodecGenerator(recordTypeName *name, codecFromIndex []*Codec, name
 		w.Write([]byte("return result, newBuf, nil\n}\n"))
 		return nil
 	}
+
+	gen.genDecodePtrInstanceSrc = gen.genDecodeInstanceSrc
+	gen.genNativeTypeNamePtrSrc = gen.genNativeTypeNameSrc
 
 	return gen
 }

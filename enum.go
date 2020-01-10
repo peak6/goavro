@@ -101,5 +101,8 @@ func makeEnumCodec(st map[string]*Codec, enclosingNamespace string, schemaMap ma
 		return nil, fmt.Errorf("cannot encode textual enum %q: value ought to be member of symbols: %v; %q", c.typeName, symbols, someString)
 	}
 
+	enumName, _ := newNameFromSchemaMap(enclosingNamespace, schemaMap)
+	c.generator = NewEnumCodecGenerator(enumName, symbols)
+
 	return c, nil
 }
