@@ -217,8 +217,6 @@ func NewEnumCodecGenerator(enumName *name, symbols []string) *CodecGenerator {
 		genNativeTypeNameSrc:     func() string { return enumName.short() },
 		genNativeTypeNamePtrSrc: func() string { return "*" + enumName.short() },
 		genNativeDefaultValueSrc: func() string { return "0" },
-		genDecodeInstanceSrc:     func() string { return "goavro.IntEnumNativeFromBinary" },
-		genDecodePtrInstanceSrc: func() string { return "goavro.IntEnumPtrNativeFromBinary"},
 		isWritable:               true,
 	}
 
@@ -253,46 +251,32 @@ func NewEnumCodecGenerator(enumName *name, symbols []string) *CodecGenerator {
 		w.WriteString("if tmp, tmpBuf, err := goavro.IntEnumNativeFromBinary(tmpBuf); err != nil {\n")
 		w.WriteString("return 0, buf, err\n")
 		w.WriteString("} else {\n")
-		w.WriteString(fmt.Sprintf("return tmp.(%s), tmpBuf, nil\n", gen.genNativeTypeNameSrc()))
+		w.WriteString(fmt.Sprintf("return %s(tmp), tmpBuf, nil\n", gen.genNativeTypeNameSrc()))
 		w.WriteString("}\n")
 		w.WriteString("}")
 
-		//w.WriteString("tmpBuf := buf\n")
-		//w.WriteString("idx, tmpBuf, err := goavro.LongNativeFromBinary(tmpBuf)\n")
-		//w.WriteString(fmt.Sprintf("if err != nil { return %s, buf, err }\n", "nil"))
-		//w.WriteString("switch idx {\n")
-		//
-		//for i, fieldCodec := range codecFromIndex {
-		//	w.WriteString(fmt.Sprintf("case %d:\n", i))
-		//	if codecFromIndex[i].typeName.fullName == "null" {
-		//		w.WriteString("// Null case, use empty value\n")
-		//		w.WriteString(fmt.Sprintf("return %s, tmpBuf, nil\n", "nil"))
-		//	} else {
-		//		w.WriteString(fmt.Sprintf("return  %s(tmpBuf)\n", fieldCodec.generator.genDecodePtrInstanceSrc()))
-		//	}
-		//}
-		//w.WriteString(fmt.Sprintf("default:\n"))
-		//w.WriteString(fmt.Sprintf("return %s, buf, fmt.Errorf(\"union index out of bounds\")\n", "nil"))
-		//w.WriteString("}\n")
-		//w.WriteString("}")
+		return w.String()
+	}
+
+	gen.genDecodePtrInstanceSrc = func() string {
+		var w bytes.Buffer
+
+		w.WriteString(fmt.Sprintf("func(buf []byte) (%s, []byte, error) {\n", gen.genNativeTypeNamePtrSrc()))
+		w.WriteString("tmpBuf := buf\n")
+		w.WriteString("if tmp, tmpBuf, err := goavro.IntEnumNativeFromBinary(tmpBuf); err != nil {\n")
+		w.WriteString("return nil, buf, err\n")
+		w.WriteString("} else {\n")
+		w.WriteString(fmt.Sprintf("ret := %s(tmp)\n", gen.genNativeTypeNameSrc()))
+		w.WriteString("return &ret, tmpBuf, nil\n")
+		w.WriteString("}\n")
+		w.WriteString("}")
 
 		return w.String()
-
 	}
 
 	return gen
 
 }
-
-// 	if result.BreakType, newBuf, err = func(buf []byte) (BreakType, []byte, error) {
-//		if tmpBreakTypeInt, newBuf, err := goavro.IntEnumNativeFromBinary(newBuf); err != nil {
-//			return 0, newBuf, err
-//		} else {
-//			return tmpBreakTypeInt.(BreakType), newBuf, nil
-//		}
-//	}(newBuf); err != nil {
-//		return nil, newBuf, err
-//	}
 
 func NewRecordCodecGenerator(recordTypeName *name, codecFromIndex []*Codec, nameFromIndex []string) *CodecGenerator {
 	gen := &CodecGenerator{
