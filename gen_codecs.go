@@ -139,20 +139,20 @@ func NewUnionCodecGenerator(codecFromIndex []*Codec) (*CodecGenerator, error) {
 		w.WriteString(fmt.Sprintf("func(buf []byte) (%s, []byte, error) {\n", gen.genNativeTypeNamePtrSrc()))
 		w.WriteString("tmpBuf := buf\n")
 		w.WriteString("idx, tmpBuf, err := goavro.LongNativeFromBinary(tmpBuf)\n")
-		w.WriteString(fmt.Sprintf("if err != nil { return %s, buf, err }\n", "nil"))
+		w.WriteString("if err != nil { return nil, buf, err }\n")
 		w.WriteString("switch idx {\n")
 
 		for i, fieldCodec := range codecFromIndex {
 			w.WriteString(fmt.Sprintf("case %d:\n", i))
 			if codecFromIndex[i].typeName.fullName == "null" {
 				w.WriteString("// Null case, use empty value\n")
-				w.WriteString(fmt.Sprintf("return %s, tmpBuf, nil\n", "nil"))
+				w.WriteString("return nil, tmpBuf, nil\n")
 			} else {
 				w.WriteString(fmt.Sprintf("return  %s(tmpBuf)\n", fieldCodec.generator.genDecodePtrInstanceSrc()))
 			}
 		}
 		w.WriteString(fmt.Sprintf("default:\n"))
-		w.WriteString(fmt.Sprintf("return %s, buf, fmt.Errorf(\"union index out of bounds\")\n", "nil"))
+		w.WriteString("return nil, buf, fmt.Errorf(\"union index out of bounds\")\n")
 		w.WriteString("}\n")
 		w.WriteString("}")
 
