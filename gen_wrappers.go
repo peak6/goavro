@@ -15,12 +15,30 @@ func StringNativeFromBinary(buf []byte) (string, []byte, error) {
 	return thing.(string), newBuf, nil
 }
 
+func StringNativePtrFromBinary(buf []byte) (*string, []byte, error) {
+	thing, newBuf, err := stringNativeFromBinary(buf)
+	if err != nil {
+		return nil, buf, err
+	}
+	tmp := thing.(string)
+	return &tmp, newBuf, nil
+}
+
 func LongNativeFromBinary(buf []byte) (int64, []byte, error) {
 	thing, newBuf, err := longNativeFromBinary(buf)
 	if err != nil {
 		return 0, buf, err
 	}
 	return thing.(int64), newBuf, nil
+}
+
+func LongNativePtrFromBinary(buf []byte) (*int64, []byte, error) {
+	thing, newBuf, err := longNativeFromBinary(buf)
+	if err != nil {
+		return nil, buf, err
+	}
+	tmp := thing.(int64)
+	return &tmp, newBuf, nil
 }
 
 func IntNativeFromBinary(buf []byte) (int32, []byte, error) {
@@ -31,12 +49,47 @@ func IntNativeFromBinary(buf []byte) (int32, []byte, error) {
 	return thing.(int32), newBuf, nil
 }
 
+func IntNativePtrFromBinary(buf []byte) (*int32, []byte, error) {
+	thing, newBuf, err := intNativeFromBinary(buf)
+	if err != nil {
+		return nil, buf, err
+	}
+	tmp := thing.(int32)
+	return &tmp, newBuf, nil
+}
+
+func IntEnumNativeFromBinary(buf []byte) (int, []byte, error) {
+	thing, newBuf, err := longNativeFromBinary(buf)
+	if err != nil {
+		return 0, buf, err
+	}
+	return int(thing.(int64)), newBuf, nil
+}
+
+func IntEnumPtrNativeFromBinary(buf []byte) (*int, []byte, error) {
+	thing, newBuf, err := longNativeFromBinary(buf)
+	if err != nil {
+		return nil, buf, err
+	}
+	tmp := int(thing.(int64))
+	return &tmp, newBuf, nil
+}
+
 func DoubleNativeFromBinary(buf []byte) (float64, []byte, error) {
 	thing, newBuf, err := doubleNativeFromBinary(buf)
 	if err != nil {
 		return 0, buf, err
 	}
 	return thing.(float64), newBuf, nil
+}
+
+func DoubleNativePtrFromBinary(buf []byte) (*float64, []byte, error) {
+	thing, newBuf, err := doubleNativeFromBinary(buf)
+	if err != nil {
+		return nil, buf, err
+	}
+	tmp := thing.(float64)
+	return &tmp, newBuf, nil
 }
 
 func FloatNativeFromBinary(buf []byte) (float32, []byte, error) {
@@ -47,12 +100,30 @@ func FloatNativeFromBinary(buf []byte) (float32, []byte, error) {
 	return thing.(float32), newBuf, nil
 }
 
+func FloatNativePtrFromBinary(buf []byte) (*float32, []byte, error) {
+	thing, newBuf, err := floatNativeFromBinary(buf)
+	if err != nil {
+		return nil, buf, err
+	}
+	tmp := thing.(float32)
+	return &tmp, newBuf, nil
+}
+
 func BoolNativeFromBinary(buf []byte) (bool, []byte, error) {
 	thing, newBuf, err := booleanNativeFromBinary(buf)
 	if err != nil {
 		return false, buf, err
 	}
 	return thing.(bool), newBuf, nil
+}
+
+func BoolNativePtrFromBinary(buf []byte) (*bool, []byte, error) {
+	thing, newBuf, err := booleanNativeFromBinary(buf)
+	if err != nil {
+		return nil, buf, err
+	}
+	tmp := thing.(bool)
+	return &tmp, newBuf, nil
 }
 
 func NativeFromBinaryDecimalBytes(buf []byte, precision int, scale int) (*big.Rat, []byte, error) {
@@ -70,6 +141,15 @@ func NativeFromBinaryDate(buf []byte) (time.Time, []byte, error) {
 		return time.Time{}, buf, err
 	}
 	return thing.(time.Time), newBuf, nil
+}
+
+func NativePtrFromBinaryDate(buf []byte) (*time.Time, []byte, error) {
+	thing, newBuf, err := nativeFromDate(intNativeFromBinary)(buf)
+	if err != nil {
+		return nil, buf, err
+	}
+	tmp := thing.(time.Time)
+	return &tmp, newBuf, nil
 }
 
 func DecodeBlockCount(buf []byte) (int64, []byte, error) {
